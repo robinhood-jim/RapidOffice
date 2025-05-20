@@ -4,15 +4,20 @@ import cn.hutool.core.io.FileUtil;
 import com.robin.comm.util.xls.ExcelSheetProp;
 import com.robin.core.fileaccess.util.ByteBufferInputStream;
 import com.robin.core.fileaccess.util.ByteBufferOutputStream;
-import com.robin.rapidoffice.excel.elements.Row;
 import com.robin.rapidoffice.elements.SheetVisibility;
 import com.robin.rapidoffice.elements.StyleHolder;
+import com.robin.rapidoffice.excel.elements.Row;
+import com.robin.rapidoffice.excel.utils.MapSpliterator;
+import com.robin.rapidoffice.excel.utils.RowSpliterator;
+import com.robin.rapidoffice.exception.ExcelException;
 import com.robin.rapidoffice.meta.Font;
 import com.robin.rapidoffice.meta.RelationShip;
 import com.robin.rapidoffice.meta.ShardingString;
 import com.robin.rapidoffice.meta.ShardingStrings;
 import com.robin.rapidoffice.reader.XMLReader;
-import com.robin.rapidoffice.utils.*;
+import com.robin.rapidoffice.utils.OPCPackage;
+import com.robin.rapidoffice.utils.ThrowableConsumer;
+import com.robin.rapidoffice.utils.XMLFactoryUtils;
 import com.robin.rapidoffice.writer.XMLWriter;
 import org.apache.commons.io.IOUtils;
 import org.apache.flink.core.memory.MemorySegment;
@@ -28,14 +33,12 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
-import com.robin.rapidoffice.excel.utils.RowSpliterator;
-import com.robin.rapidoffice.excel.utils.MapSpliterator;
 
 
 public class WorkBook implements Closeable {
@@ -60,6 +63,14 @@ public class WorkBook implements Closeable {
     File file;
     StyleHolder holder=new StyleHolder();
     Map<String, ShardingString> shardingStringMap=new HashMap<>();
+    String workBookPath;
+    String shardingStringsPath;
+    String stylePath;
+    String appPath;
+    Map<String, String> formatMap =new HashMap<>();
+    List<String> formatIdList=new ArrayList<>();
+    Map<String,RelationShip> relationShipTypeMap=new HashMap<>();
+
 
     public WorkBook(File file,String applicationName,String applicationVersion,int bufferSize){
         this.applicationName=applicationName;
@@ -75,6 +86,16 @@ public class WorkBook implements Closeable {
     public WorkBook(InputStream inputStream) throws XMLStreamException,IOException{
         Assert.notNull(inputStream,"");
         opcPackage=OPCPackage.open(inputStream);
+        opcPackage.doReadInit((zipFile, zipStreams)->{
+            try {
+                extractParts();
+                extractStyle(stylePath);
+                opcPackage.extractRelationShip(OPCPackage.relsNameFor(workBookPath),"_rel");
+                extractExtendProperty(appPath);
+            }catch (IOException|XMLStreamException ex){
+                throw new ExcelException(ex.getMessage());
+            }
+        });
         beginRead();
     }
     public WorkBook(File file) throws XMLStreamException,IOException {
@@ -83,6 +104,16 @@ public class WorkBook implements Closeable {
         }
         this.file=file;
         opcPackage=OPCPackage.open(file);
+        opcPackage.doReadInit((zipFile, zipStreams)->{
+            try {
+                extractParts();
+                extractStyle(stylePath);
+                opcPackage.extractRelationShip(OPCPackage.relsNameFor(workBookPath),"_rel");
+                extractExtendProperty(appPath);
+            }catch (IOException|XMLStreamException ex){
+                throw new ExcelException(ex.getMessage());
+            }
+        });
         beginRead();
     }
     public WorkBook(File path,int bufferSize){
@@ -101,14 +132,14 @@ public class WorkBook implements Closeable {
     }
 
     public List<String> getFormats(){
-        return opcPackage.getFormatIdList();
+        return formatIdList;
     }
     public Map<String,String> getNumFmtMap(){
-        return opcPackage.getFormatMap();
+        return formatMap;
     }
 
     private void beginRead() throws XMLStreamException,IOException {
-        try(XMLReader reader=new XMLReader(XMLFactoryUtils.getDefaultInputFactory(),opcPackage.getWorkBookContent())){
+        try(XMLReader reader=new XMLReader(XMLFactoryUtils.getDefaultInputFactory(),opcPackage.getRequiredEntryContent(workBookPath))){
             while(reader.goTo(() -> reader.isStartElement("sheets") || reader.isStartElement("workbookPr") ||
                     reader.isStartElement("workbookView") || reader.isEndElement("workbook"))){
                 if ("workbookView".equals(reader.getLocalName())) {
@@ -126,7 +157,7 @@ public class WorkBook implements Closeable {
                 }
             }
         }
-        shardingStrings=ShardingStrings.formInputStream(opcPackage.getShardingStrings());
+        shardingStrings=ShardingStrings.formInputStream(opcPackage.getRequiredEntryContent(shardingStringsPath));
     }
     private void beginFlush() throws IOException{
         Assert.notNull(opcPackage.getZipOutStream(),"");
@@ -416,6 +447,66 @@ public class WorkBook implements Closeable {
             }
             if (!sheets.get(0).prop.isUseOffHeap()) {
                 FileUtil.del(localTmpPath);
+            }
+        }
+    }
+
+    void extractParts() throws XMLStreamException,IOException{
+        final String contentTypesXml = "[Content_Types].xml";
+        try(XMLReader reader=new XMLReader(XMLFactoryUtils.getDefaultInputFactory(),opcPackage.getRequiredEntryContent(contentTypesXml))){
+            while (reader.goTo(() -> reader.isStartElement("Override"))) {
+                String contentType = reader.getAttributeRequired("ContentType");
+                if(OPCPackage.WORKBOOK_MAIN_CONTENT_TYPE.equals(contentType) || OPCPackage.WORKBOOK_EXCEL_MACRO_ENABLED_MAIN_CONTENT_TYPE.equals(contentType)){
+                    workBookPath=reader.getAttributeRequired("PartName");
+                }else if(OPCPackage.SHARED_STRINGS_CONTENT_TYPE.equals(contentType)){
+                    shardingStringsPath= reader.getAttributeRequired("PartName");
+                }else if(OPCPackage.STYLE_CONTENT_TYPE.equals(contentType)){
+                    stylePath=reader.getAttributeRequired("PartName");
+                }else if(OPCPackage.EXTEND_PROPERTY_CONTENTTYPE.equals(contentType)){
+                    appPath=reader.getAttributeRequired("PartName");
+                }
+                if(workBookPath!=null && shardingStringsPath!=null && stylePath!=null && appPath!=null){
+                    break;
+                }
+            }
+            if(workBookPath==null){
+                workBookPath="/xl/workbook.xml";
+            }
+        }
+    }
+    void extractStyle(String stylePath) throws XMLStreamException,IOException{
+        try(XMLReader reader=new XMLReader(XMLFactoryUtils.getDefaultInputFactory(),opcPackage.getRequiredEntryContent(stylePath))){
+            AtomicBoolean insideCellXfs = new AtomicBoolean(false);
+            while (reader.goTo(() -> reader.isStartElement("numFmt") || reader.isStartElement("xf") ||
+                    reader.isStartElement("cellXfs") || reader.isEndElement("cellXfs"))) {
+                if (reader.isStartElement("cellXfs")) {
+                    insideCellXfs.set(true);
+                } else if (reader.isEndElement("cellXfs")) {
+                    insideCellXfs.set(false);
+                }
+                if ("numFmt".equals(reader.getLocalName())) {
+                    String formatCode = reader.getAttributeRequired("formatCode");
+                    formatMap.put(reader.getAttributeRequired("numFmtId"), formatCode);
+                } else if (insideCellXfs.get() && reader.isStartElement("xf")) {
+                    String numFmtId = reader.getAttribute("numFmtId");
+                    formatIdList.add(numFmtId);
+                    if (OPCPackage.IMPLICIT_NUM_FMTS.containsKey(numFmtId)) {
+                        formatMap.put(numFmtId, OPCPackage.IMPLICIT_NUM_FMTS.get(numFmtId));
+                    }
+                }
+            }
+        }
+    }
+
+
+    void extractExtendProperty(String extendPropPath) throws XMLStreamException,IOException{
+        try(XMLReader reader=new XMLReader(XMLFactoryUtils.getDefaultInputFactory(),opcPackage.getRequiredEntryContent(extendPropPath))){
+            while (reader.goTo(()->reader.isStartElement("Application") ||reader.isStartElement("AppVersion"))){
+                if("Application".equals(reader.getLocalName())){
+                    applicationName=reader.getValueUntilEndElement("Application");
+                }else if("AppVersion".equals(reader.getLocalName())){
+                    applicationVersion=reader.getValueUntilEndElement("AppVersion");
+                }
             }
         }
     }
