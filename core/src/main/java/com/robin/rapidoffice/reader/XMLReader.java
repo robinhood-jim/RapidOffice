@@ -1,5 +1,8 @@
 package com.robin.rapidoffice.reader;
 
+import com.robin.rapidoffice.exception.StreamReadException;
+import com.robin.rapidoffice.exception.WordException;
+
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -42,9 +45,20 @@ public class XMLReader implements Closeable {
     public boolean hasNext() throws XMLStreamException{
         return reader.hasNext();
     }
+    public void next() throws XMLStreamException{
+        if(reader.hasNext()){
+            reader.next();
+        }
+    }
 
     public String getAttribute(String name) {
         return reader.getAttributeValue(null, name);
+    }
+    public String getAttributeAt(int pos){
+        return reader.getAttributeValue(pos);
+    }
+    public int getAttributeCount(){
+        return reader.getAttributeCount();
     }
 
     public String getAttributeRequired(String name) throws XMLStreamException {
@@ -62,9 +76,62 @@ public class XMLReader implements Closeable {
     public Optional<String> getOptionalAttribute(String name) {
         return Optional.ofNullable(reader.getAttributeValue(null, name));
     }
-    public String getValueUntilEndElement(String elementName) throws XMLStreamException {
-        return getValueUntilEndElement(elementName, "");
+    public void doInAttributes(Consumer<XMLStreamReader> consumer){
+        consumer.accept(reader);
     }
+    public String getValueUntilEndElement(String elementName) {
+        try{
+            return getValueUntilEndElement(elementName, "");
+        }catch (XMLStreamException ex){
+            throw new StreamReadException(ex);
+        }
+    }
+    public void doUntilEndElement(String eleName,Consumer<XMLStreamReader> consumer){
+        try {
+            while (reader.hasNext()) {
+                int type = reader.next();
+
+                if (type == XMLStreamReader.END_ELEMENT) {
+                    if(eleName.equals(reader.getLocalName())) {
+                        reader.next();
+                        break;
+                    }else{
+                        reader.next();
+                    }
+                }
+                if(type == XMLStreamReader.END_ELEMENT && eleName.equals(reader.getLocalName())) {
+                    reader.next();
+                    break;
+                }
+                if(reader.isStartElement()) {
+                    //System.out.println("start "+reader.getLocalName());
+                    //System.out.println(reader.getAttributeCount());
+                    consumer.accept(reader);
+                }
+            }
+        }catch (XMLStreamException ex){
+            throw new WordException(ex);
+        }
+    }
+    public String getValue(String elementName) {
+        StringBuilder sb = new StringBuilder();
+        try {
+            while (reader.hasNext()) {
+                int type = reader.next();
+                if (type == XMLStreamReader.CDATA || type == XMLStreamReader.CHARACTERS || type == XMLStreamReader.SPACE) {
+                    sb.append(reader.getText());
+                }
+                if (type == XMLStreamReader.END_ELEMENT && elementName.equals(reader.getLocalName())) {
+                    break;
+                }
+            }
+            return sb.toString();
+        }catch (XMLStreamException ex){
+            throw new StreamReadException(ex);
+        }
+
+    }
+
 
     public String getValueUntilEndElement(String elementName, String skipping) throws XMLStreamException {
         StringBuilder sb = new StringBuilder();
@@ -112,5 +179,9 @@ public class XMLReader implements Closeable {
         if(inputStream!=null){
             inputStream.close();
         }
+    }
+
+    public XMLStreamReader getReader() {
+        return reader;
     }
 }
