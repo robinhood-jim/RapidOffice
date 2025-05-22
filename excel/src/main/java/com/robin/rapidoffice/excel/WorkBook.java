@@ -298,17 +298,21 @@ public class WorkBook implements Closeable {
             w.append("</workbook>");
         });
     }
-    void beginPart(String partName) throws IOException{
+    ZipEntry beginPart(String partName) throws IOException{
+        ZipEntry entry=new ZipEntry(partName);
         if(opcPackage.getZipOutStream()!=null){
-            opcPackage.getZipOutStream().putNextEntry(new ZipEntry(partName));
+            opcPackage.getZipOutStream().putNextEntry(entry);
         }
-
+        return entry;
     }
+
     void writeFileContent(String partName, ThrowableConsumer<XMLWriter> consumer) throws IOException{
-        beginPart(partName);
-        consumer.accept(writer);
-        writer.flush();
-        opcPackage.getZipOutStream().closeEntry();
+        synchronized (opcPackage.getZipOutStream()) {
+            beginPart(partName);
+            consumer.accept(writer);
+            writer.flush();
+            opcPackage.getZipOutStream().closeEntry();
+        }
     }
 
     void beginSheetWrite(WorkSheet sheet,ExcelSheetProp prop) throws IOException{
@@ -360,7 +364,7 @@ public class WorkBook implements Closeable {
     public WorkSheet createSheet(String sheetName, ExcelSheetProp prop) throws IOException{
         return createSheet(sheetName,prop,null);
     }
-    public WorkSheet createSheet(String sheetName, ExcelSheetProp prop, Consumer<WorkBook> consumer) throws IOException{
+    public WorkSheet createSheet(String sheetName, ExcelSheetProp prop, Consumer<WorkSheet> consumer) throws IOException{
         int idx=sheets.size();
         idx++;
         WorkSheet sheet=new WorkSheet(this,prop,idx,sheetIdPrefix+idx,sheetIdPrefix+idx,sheetName,SheetVisibility.VISIBLE);
@@ -449,7 +453,9 @@ public class WorkBook implements Closeable {
                 FileUtil.del(localTmpPath);
             }
         }
+        finished=true;
     }
+
 
     void extractParts() throws XMLStreamException,IOException{
         final String contentTypesXml = "[Content_Types].xml";

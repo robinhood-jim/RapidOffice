@@ -54,6 +54,7 @@
         <module>core</module>
         <module>excel</module>
         <module>word</module>
+        <module>test</module>
     </modules>
     <!-- properties -->
     <properties>
@@ -77,7 +78,7 @@
         <jackson.version>2.9.10</jackson.version>
         <pool.version>2.4.3</pool.version>
         <commons-dbcp.version>1.4</commons-dbcp.version>
-        <commons-io.version>2.7</commons-io.version>
+        <commons-io.version>2.19.0</commons-io.version>
         <commons-net.version>3.9.0</commons-net.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <comm-codec.version>1.4</comm-codec.version>
@@ -111,7 +112,7 @@
         <guava.version>29.0-jre</guava.version>
         <jsoup.version>1.15.3</jsoup.version>
         <freemarker.version>2.3.18</freemarker.version>
-        <compress.version>1.21</compress.version>
+        <compress.version>1.27.1</compress.version>
         <helix.version>0.6.5</helix.version>
         <quartz.version>2.3.2</quartz.version>
         <oracle.version>11.1.0.6.0</oracle.version>

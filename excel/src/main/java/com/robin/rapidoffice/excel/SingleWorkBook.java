@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.function.Consumer;
 
 @Slf4j
 public class SingleWorkBook extends WorkBook {
@@ -57,6 +58,10 @@ public class SingleWorkBook extends WorkBook {
     public void beginWrite() throws IOException{
         int sheetNum=getSheetNum()+1;
         currentSheet=createSheet("sheet"+sheetNum,prop);
+    }
+    public void beginWrite(Consumer<WorkSheet> consumer) throws IOException{
+        int sheetNum=getSheetNum()+1;
+        currentSheet=createSheet("sheet"+sheetNum,prop,consumer);
     }
     public boolean writeRow(Map<String,Object> valueMap) throws IOException{
         if(totalRow>0 && totalRow % sheetMaxRows==0){

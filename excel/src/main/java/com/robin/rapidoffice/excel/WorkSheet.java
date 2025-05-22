@@ -38,19 +38,19 @@ public class WorkSheet {
     private SheetVisibility visibility;
     private WorkBook workBook;
     boolean finished = false;
-    private final Set<Integer> hiddenRows = new HashSet<>();
+    protected final Set<Integer> hiddenRows = new HashSet<>();
 
-    private final Set<Integer> hiddenColumns = new HashSet<>();
-    private final Map<Integer, Double> colWidths = new HashMap<>();
+    protected final Set<Integer> hiddenColumns = new HashSet<>();
+    protected final Map<Integer, Double> colWidths = new HashMap<>();
 
-    private final Map<Integer, Column> colStyles = new HashMap<>();
+    protected final Map<Integer, Column> colStyles = new HashMap<>();
 
-    private Boolean fitToPage = false;
-    private Boolean autoPageBreaks = false;
-    private Cell[] currentCells;
-    private int currentRowNum=1;
-    private List<Integer> styles=new ArrayList<>();
-    ExcelSheetProp prop;
+    protected Boolean fitToPage = false;
+    protected Boolean autoPageBreaks = false;
+    protected Cell[] currentCells;
+    protected int currentRowNum=1;
+    protected List<Integer> styles=new ArrayList<>();
+    protected ExcelSheetProp prop;
 
     Font defaultFont;
     Fill defaultFill;
@@ -59,11 +59,11 @@ public class WorkSheet {
     boolean ifHidden;
     public static final int MAX_ROWS = 1_048_576;
 
-    public WorkSheet(WorkBook workBook,ExcelSheetProp prop,int index,String id,String sheetId,String name,SheetVisibility visibility){
+    WorkSheet(WorkBook workBook,ExcelSheetProp prop,int index,String id,String sheetId,String name,SheetVisibility visibility){
         this(workBook,index,id,sheetId,name,visibility);
         this.prop=prop;
     }
-    public WorkSheet(WorkBook workBook,int index,String id,String sheetId,String name,SheetVisibility visibility){
+    WorkSheet(WorkBook workBook,int index,String id,String sheetId,String name,SheetVisibility visibility){
         this.index=index;
         this.id=id;
         this.name=name;
@@ -108,6 +108,15 @@ public class WorkSheet {
             throw new ExcelException("row over excel define columns");
         }
     }
+    void writeTitle(XMLWriter w, ExcelSheetProp prop) throws IOException{
+        w.append("<row r=\"").append(currentRowNum).append("\" s=\"1\" >");
+        for(int i=0;i<prop.getColumnPropList().size();i++) {
+            ShardingString s1=workBook.addShardingString(prop.getColumnPropList().get(i).getColumnName());
+            w.append("<c r=\"").append(CellUtils.colToString(i)).append(currentRowNum).append("\" t=\"s\" >")
+                    .append("<v>").append(s1.getIndex()).append("</v></c>");
+        }
+        w.append("</row>");
+    }
     public void writeRow(Map<String,Object> valueMap) throws IOException{
         XMLWriter w=workBook.sheetWriterMap.get(getIndex());
         if(currentRowNum==MAX_ROWS-1){
@@ -131,15 +140,6 @@ public class WorkSheet {
             writeRow(w,ifHidden,(byte)0,null);
             currentRowNum++;
         }
-    }
-    void writeTitle(XMLWriter w, ExcelSheetProp prop) throws IOException{
-        w.append("<row r=\"").append(currentRowNum).append("\" s=\"1\" >");
-        for(int i=0;i<prop.getColumnPropList().size();i++) {
-            ShardingString s1=workBook.addShardingString(prop.getColumnPropList().get(i).getColumnName());
-            w.append("<c r=\"").append(CellUtils.colToString(i)).append(currentRowNum).append("\" t=\"s\" >")
-                    .append("<v>").append(s1.getIndex()).append("</v></c>");
-        }
-        w.append("</row>");
     }
     void writeRow(XMLWriter w,boolean isHidden,byte groupLevel,
                      Double rowHeight) throws IOException{
@@ -211,11 +211,11 @@ public class WorkSheet {
     private void mergeCell(CellAddress begin,CellAddress end,Object value){
 
     }
-    void setDefaultStyles(Consumer<WorkBook> consumer){
+    void setDefaultStyles(Consumer<WorkSheet> consumer){
         Assert.notNull(prop,"");
         styles=new ArrayList<>(prop.getColumnPropList().size());
         if(consumer!=null){
-            consumer.accept(workBook);
+            consumer.accept(this);
         }else {
             defaultFont = getDefaultFont();
             defaultFill=getDefaultFill();
@@ -228,15 +228,35 @@ public class WorkSheet {
         Font font=new Font(false,false,false,CellUtils.getDefaultFontName(),BigDecimal.valueOf(12.0),null,false);
         return font;
     }
+
+    public void setDefaultFont(Font defaultFont) {
+        this.defaultFont = defaultFont;
+    }
+
     Fill getDefaultFill(){
         return Fill.BLACK;
     }
+
+    public void setDefaultFill(Fill defaultFill) {
+        this.defaultFill = defaultFill;
+    }
+
     Border getDefaultBorder(){
         return Border.BLACK;
     }
+
+    public void setDefaultBorder(Border defaultBorder) {
+        this.defaultBorder = defaultBorder;
+    }
+
     Alignment getDefaultAlignment(){
         return new Alignment("center","center",false,0,0);
     }
+
+    public void setDefaultAlignment(Alignment defaultAlignment) {
+        this.defaultAlignment = defaultAlignment;
+    }
+
     String getColumnDefine() throws IOException{
         return "<cols><col min=\"1\" max=\"1\" customWidth=\"true\"></col></cols>";
     }

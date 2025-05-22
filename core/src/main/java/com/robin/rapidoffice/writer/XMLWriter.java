@@ -12,11 +12,12 @@ public class XMLWriter {
 
     private StringBuilder sb;
     private OutputStream zipOutputStream;
+    private int totalSize=0;
 
 
     public XMLWriter(OutputStream outputStream){
         this.zipOutputStream=outputStream;
-        this.sb=new StringBuilder(512*1024);
+        this.sb=new StringBuilder(1024*1024);
     }
     private XMLWriter append(String s, boolean escape) throws IOException {
         if (escape) {
@@ -56,6 +57,7 @@ public class XMLWriter {
         }
     }
     public void flush() throws IOException {
+        totalSize+=sb.length();
         zipOutputStream.write(sb.toString().getBytes(StandardCharsets.UTF_8));
         zipOutputStream.flush();
         sb.setLength(0);
@@ -63,5 +65,13 @@ public class XMLWriter {
 
     public ZipOutputStream getZipOutputStream() {
         return (ZipOutputStream) zipOutputStream;
+    }
+
+    public int getTotalSize() {
+        return totalSize>0?totalSize:sb.length();
+    }
+
+    public StringBuilder getSb() {
+        return sb;
     }
 }

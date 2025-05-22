@@ -205,6 +205,8 @@ public class Document implements Closeable {
 
     @Override
     public void close() throws IOException {
-
+        if(opcPackage!=null){
+            opcPackage.close();
+        }
     }
 }
