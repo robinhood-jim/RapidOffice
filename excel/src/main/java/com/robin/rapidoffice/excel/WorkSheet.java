@@ -116,6 +116,7 @@ public class WorkSheet {
                     .append("<v>").append(s1.getIndex()).append("</v></c>");
         }
         w.append("</row>");
+        currentRowNum++;
     }
     public void writeRow(Map<String,Object> valueMap) throws IOException{
         XMLWriter w=workBook.sheetWriterMap.get(getIndex());
@@ -289,6 +290,7 @@ public class WorkSheet {
         }
         return numFmtStr;
     }
+
     public void finish() throws IOException{
         if(finished){
             return;

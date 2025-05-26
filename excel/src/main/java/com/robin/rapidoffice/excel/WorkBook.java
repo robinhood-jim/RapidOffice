@@ -322,8 +322,6 @@ public class WorkBook implements Closeable {
             MemorySegment segment= MemorySegmentFactory.allocateOffHeapUnsafeMemory(maxSheetSize);
             segmentMap.put(id,segment);
             outputStream=new ByteBufferOutputStream(segment.getOffHeapBuffer());
-            sheetTmpStreamMap.put(id,outputStream);
-            sheetWriterMap.put(id,new XMLWriter(outputStream));
         }else{
             if(localTmpPath==null){
                 localTmpPath=System.getProperty("java.io.tmpdir")+File.separator+System.currentTimeMillis();
@@ -331,9 +329,9 @@ public class WorkBook implements Closeable {
             }
             String localSheetPath=localTmpPath+File.separator+"sheet"+id+".xml";
             outputStream=new FileOutputStream(localSheetPath);
-            sheetTmpStreamMap.put(id,outputStream);
-            sheetWriterMap.put(id,new XMLWriter(outputStream));
         }
+        sheetTmpStreamMap.put(id,outputStream);
+        sheetWriterMap.put(id,new XMLWriter(outputStream));
         sheet.writeHeader(sheetWriterMap.get(id));
         if(prop.isFillHeader()){
             sheet.writeTitle(sheetWriterMap.get(id),prop);
