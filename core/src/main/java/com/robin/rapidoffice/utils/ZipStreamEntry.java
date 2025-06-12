@@ -77,7 +77,7 @@ public class ZipStreamEntry implements Closeable {
         return file;
     }
     boolean isSheetContent(String path){
-        return path.contains("sheet");
+        return path.contains("sheet") || path.contains("document.xml");
     }
     public InputStream getInputStream(String name){
         String tname=name;

@@ -41,7 +41,7 @@ public class ParagraphElement implements IBodyElement {
 
     @Override
     public String toString() {
-        StringBuilder builder=new StringBuilder("Paragraph "+getId()+" "+getRsidR()+" "+getRsidRDefault()+"\n");
+        StringBuilder builder=new StringBuilder("Paragraph \n");
         if(!CollectionUtils.isEmpty(elements)){
             elements.stream().forEach(f->builder.append(f.toString()));
         }

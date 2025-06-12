@@ -2,7 +2,6 @@ package com.robin.rapidoffice.writer;
 
 import com.robin.rapidoffice.utils.XmlEscapeHelper;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -73,5 +72,8 @@ public class XMLWriter {
 
     public StringBuilder getSb() {
         return sb;
+    }
+    public boolean shouldClose(int maxSize,int threshold){
+        return maxSize-totalSize-sb.length()<=threshold;
     }
 }

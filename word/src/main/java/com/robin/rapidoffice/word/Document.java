@@ -19,6 +19,7 @@ public class Document implements Closeable {
     List<Header> headers=new ArrayList<>();
     List<Theme> themes=new ArrayList<>();
     private File file;
+    InputStream inputStream;
     private OPCPackage opcPackage;
     private String documentPath;
     private String fontTablePath;
@@ -37,6 +38,19 @@ public class Document implements Closeable {
         }
         this.file=file;
         opcPackage= OPCPackage.open(file);
+        opcPackage.doReadInit((zipFile,zipStrems)->{
+            try{
+                extractParts();
+                extractStyle();
+                opcPackage.extractRelationShip(OPCPackage.relsNameFor(documentPath),"_rel");
+            }catch (IOException|XMLStreamException ex){
+
+            }
+        });
+    }
+    public Document(InputStream inputStream) throws IOException{
+        this.inputStream=inputStream;
+        opcPackage=OPCPackage.open(inputStream);
         opcPackage.doReadInit((zipFile,zipStrems)->{
             try{
                 extractParts();
@@ -207,6 +221,9 @@ public class Document implements Closeable {
     public void close() throws IOException {
         if(opcPackage!=null){
             opcPackage.close();
+        }
+        if(inputStream!=null){
+            inputStream.close();
         }
     }
 }

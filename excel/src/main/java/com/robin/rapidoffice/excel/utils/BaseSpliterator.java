@@ -154,8 +154,10 @@ abstract class BaseSpliterator<T> implements Spliterator<T> {
             case "s":
             case "inlineStr":
                 return CellType.STRING;
+            default:
+                throw new IllegalStateException("Unknown cell type : " + type);
         }
-        throw new IllegalStateException("Unknown cell type : " + type);
+
     }
 
     BiFunction<String, CellAddress,?> getParserForType(CellType type) {
@@ -167,8 +169,10 @@ abstract class BaseSpliterator<T> implements Spliterator<T> {
             case FORMULA:
             case ERROR:
                 return BaseSpliterator::defaultValue;
+            default:
+                throw new IllegalStateException("No parser defined for type " + type);
         }
-        throw new IllegalStateException("No parser defined for type " + type);
+
     }
 
 

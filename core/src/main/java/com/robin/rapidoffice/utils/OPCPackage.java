@@ -113,21 +113,22 @@ public class OPCPackage implements Closeable {
         this.zipOutStream=new OpcZipOutputStream(fileOutputStream);
     }
 
-    private OPCPackage(OutputStream outputStream,int bufferedSize){
-        this.bufferedStream=new BufferedOutputStream(outputStream,bufferedSize>0?bufferedSize:DEFAULTBUFFEREDSIZE);
-        readWriteMode=true;
-        zipOutStream=new OpcZipOutputStream(bufferedStream);
-    }
-    private OPCPackage(InputStream stream, String encode, ZipStreamEntry.InputStreamBufferMode mode) throws IOException{
+    public OPCPackage(InputStream stream, String encode, ZipStreamEntry.InputStreamBufferMode mode) throws IOException{
         zipStreams=new ZipArchiveInputStream(stream,encode);
 
         if (ObjectUtils.isEmpty(zipFile) && !ObjectUtils.isEmpty(zipStreams)) {
             entry = new ZipStreamEntry(zipStreams,mode);
         }
     }
+    private OPCPackage(OutputStream outputStream,int bufferedSize){
+        this.bufferedStream=new BufferedOutputStream(outputStream,bufferedSize>0?bufferedSize:DEFAULTBUFFEREDSIZE);
+        readWriteMode=true;
+        zipOutStream=new OpcZipOutputStream(bufferedStream);
+    }
     private OPCPackage(InputStream stream) throws IOException {
         this(stream,"UTF8", ZipStreamEntry.InputStreamBufferMode.HEAP);
     }
+
 
     public static OPCPackage open(File zipFile){
         return new OPCPackage(zipFile);
@@ -152,7 +153,7 @@ public class OPCPackage implements Closeable {
     }
     public static OPCPackage create(File fileName,int bufferedSize){
         try{
-            FileUtils.mkDirReclusive(fileName.getAbsolutePath());
+            FileUtils.mkDirReclusive(fileName.getAbsolutePath().replace("\\","/"));
             OPCPackage opcPackage=new OPCPackage(fileName,bufferedSize);
             return opcPackage;
 

@@ -18,6 +18,7 @@ import com.robin.rapidoffice.reader.XMLReader;
 import com.robin.rapidoffice.utils.OPCPackage;
 import com.robin.rapidoffice.utils.ThrowableConsumer;
 import com.robin.rapidoffice.utils.XMLFactoryUtils;
+import com.robin.rapidoffice.utils.ZipStreamEntry;
 import com.robin.rapidoffice.writer.XMLWriter;
 import org.apache.commons.io.IOUtils;
 import org.apache.flink.core.memory.MemorySegment;
@@ -56,7 +57,7 @@ public class WorkBook implements Closeable {
     Map<Integer,XMLWriter> sheetWriterMap=new HashMap<>();
     XMLWriter writer;
     static String sheetIdPrefix="rId";
-    int maxSheetSize=100*1024*1024;
+    int maxSheetSize;
     String localTmpPath=null;
     final com.robin.rapidoffice.meta.Properties properties = new com.robin.rapidoffice.meta.Properties ();
     boolean readWriteTag=false;
@@ -84,8 +85,11 @@ public class WorkBook implements Closeable {
         opcPackage=OPCPackage.create(cout,bufferSize);
     }
     public WorkBook(InputStream inputStream) throws XMLStreamException,IOException{
+        this(inputStream, ZipStreamEntry.InputStreamBufferMode.HEAP);
+    }
+    public WorkBook(InputStream inputStream, ZipStreamEntry.InputStreamBufferMode mode) throws XMLStreamException,IOException{
         Assert.notNull(inputStream,"");
-        opcPackage=OPCPackage.open(inputStream);
+        opcPackage=new OPCPackage(inputStream,"UTF8",mode);
         opcPackage.doReadInit((zipFile, zipStreams)->{
             try {
                 extractParts();
@@ -98,6 +102,7 @@ public class WorkBook implements Closeable {
         });
         beginRead();
     }
+
     public WorkBook(File file) throws XMLStreamException,IOException {
         if(!FileUtil.exist(file)){
             throw new IOException("file not found!");
@@ -123,12 +128,30 @@ public class WorkBook implements Closeable {
         writer=new XMLWriter(opcPackage.getZipOutStream());
         readWriteTag=true;
     }
+    public WorkBook(File path,int bufferSize,int maxSheetSize){
+        this.file=path;
+        opcPackage=OPCPackage.create(path,bufferSize);
+        shardingStrings=new ShardingStrings();
+        writer=new XMLWriter(opcPackage.getZipOutStream());
+        readWriteTag=true;
+        if(maxSheetSize>0) {
+            this.maxSheetSize = maxSheetSize;
+        }
+    }
     public WorkBook(OutputStream outputStream){
         Assert.notNull(outputStream,"");
         opcPackage=OPCPackage.create(outputStream,0);
         writer=new XMLWriter(opcPackage.getZipOutStream());
         shardingStrings=new ShardingStrings();
         readWriteTag=true;
+    }
+    public WorkBook(OutputStream outputStream,int maxSheetSize){
+        Assert.notNull(outputStream,"");
+        opcPackage=OPCPackage.create(outputStream,0);
+        writer=new XMLWriter(opcPackage.getZipOutStream());
+        shardingStrings=new ShardingStrings();
+        readWriteTag=true;
+        this.maxSheetSize=maxSheetSize;
     }
 
     public List<String> getFormats(){

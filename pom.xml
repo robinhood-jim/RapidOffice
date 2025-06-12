@@ -54,6 +54,7 @@
         <module>core</module>
         <module>excel</module>
         <module>word</module>
+        <module>test</module>
     </modules>
     <!-- properties -->
     <properties>
@@ -137,6 +138,7 @@
         <spark.version>2.4.8</spark.version>
         <hutool.version>5.8.11</hutool.version>
 		<sonar.moduleKey>${project.groupId}:${project.artifactId}</sonar.moduleKey>
+        <github.global.server>github</github.global.server>
     </properties>
 
 

@@ -1,11 +1,9 @@
 package com.robin.rapidoffice.excel;
 
 import cn.hutool.core.util.NumberUtil;
-
 import com.robin.comm.util.xls.ExcelColumnProp;
 import com.robin.comm.util.xls.ExcelSheetProp;
 import com.robin.core.base.util.Const;
-import com.robin.core.fileaccess.util.ByteBufferOutputStream;
 import com.robin.rapidoffice.elements.*;
 import com.robin.rapidoffice.excel.elements.Cell;
 import com.robin.rapidoffice.excel.utils.CellUtils;
@@ -15,7 +13,6 @@ import com.robin.rapidoffice.meta.Fill;
 import com.robin.rapidoffice.meta.Font;
 import com.robin.rapidoffice.meta.Formula;
 import com.robin.rapidoffice.meta.ShardingString;
-
 import com.robin.rapidoffice.utils.OPCPackage;
 import com.robin.rapidoffice.writer.XMLWriter;
 import org.springframework.util.Assert;
@@ -112,7 +109,7 @@ public class WorkSheet {
         w.append("<row r=\"").append(currentRowNum).append("\" s=\"1\" >");
         for(int i=0;i<prop.getColumnPropList().size();i++) {
             ShardingString s1=workBook.addShardingString(prop.getColumnPropList().get(i).getColumnName());
-            w.append("<c r=\"").append(CellUtils.colToString(i)).append(currentRowNum).append("\" t=\"s\" >")
+            w.append("<c r=\"").append(CellUtils.colToString(i)).append(currentRowNum).append("\" t=\"s\" s=\""+styles.get(i)+"\">")
                     .append("<v>").append(s1.getIndex()).append("</v></c>");
         }
         w.append("</row>");
@@ -267,6 +264,7 @@ public class WorkSheet {
         switch (columnProp.getColumnType()){
             case Const.META_TYPE_BIGINT:
             case Const.META_TYPE_INTEGER:
+            case Const.META_TYPE_BOOLEAN:
                 numFmtStr=ObjectUtils.isEmpty(columnProp.getFormat())?OPCPackage.IMPLICIT_NUM_FMTS.get("1"):columnProp.getFormat();
                 break;
             case Const.META_TYPE_DECIMAL:
@@ -274,9 +272,6 @@ public class WorkSheet {
             case Const.META_TYPE_DOUBLE:
             case Const.META_TYPE_FLOAT:
                 numFmtStr=ObjectUtils.isEmpty(columnProp.getFormat())?OPCPackage.IMPLICIT_NUM_FMTS.get("2"):columnProp.getFormat();
-                break;
-            case Const.META_TYPE_BOOLEAN:
-                numFmtStr=ObjectUtils.isEmpty(columnProp.getFormat())?OPCPackage.IMPLICIT_NUM_FMTS.get("1"):columnProp.getFormat();
                 break;
             case Const.META_TYPE_DATE:
             case Const.META_TYPE_TIMESTAMP:
@@ -302,9 +297,10 @@ public class WorkSheet {
 
         w.flush();
         OutputStream outputStream=workBook.sheetTmpStreamMap.get(getIndex());
-        if(!ByteBufferOutputStream.class.isAssignableFrom(outputStream.getClass())) {
+        if(!ObjectUtils.isEmpty(outputStream)) {
             outputStream.close();
         }
+
         finished=true;
     }
 
