@@ -63,7 +63,7 @@ public class TestRead {
                 .addColumnProp(new ExcelColumnProp("diff", "diff", Const.META_TYPE_FORMULA, "(D{P}-E{P})/C{P}")).setStreamMode();
         Random random = new Random(12312321321312L);
         Map<String,Object> cachedMap=new HashMap<>();
-        try(SingleWorkBook workBook=new SingleWorkBook(new File("d:/test111.xlsx"),0,builder.build())){
+        try(SingleWorkBook workBook=new SingleWorkBook(new File("d:/test234.xlsx"),0,builder.build())){
             Long startTs = System.currentTimeMillis() - 3600 * 24 * 1000;
             workBook.beginWrite();
             for(int j=0;j<1200000;j++){

@@ -1,6 +1,7 @@
 package com.robin.rapidoffice.utils;
 
 
+import com.github.rzymek.opczip.OpcZipOutputStream;
 import com.robin.comm.util.xls.ExcelColumnProp;
 import com.robin.core.base.util.Const;
 import com.robin.core.base.util.FileUtils;
@@ -16,7 +17,10 @@ import org.springframework.util.ObjectUtils;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.*;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 import java.util.zip.ZipOutputStream;
@@ -57,11 +61,12 @@ public class OPCPackage implements Closeable {
     private ZipFile zipFile;
     private ZipArchiveInputStream zipStreams;
 
-    private ZipOutputStream zipOutStream;
+    private OpcZipOutputStream zipOutStream;
     private BufferedOutputStream bufferedStream;
     private FileOutputStream fileOutputStream=null;
     private static int DEFAULTBUFFEREDSIZE=4096;
     private ZipStreamEntry entry;
+
 
     public static final String WORKBOOK_MAIN_CONTENT_TYPE =
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml";
@@ -105,23 +110,25 @@ public class OPCPackage implements Closeable {
         readWriteMode=true;
         this.fileOutputStream=new FileOutputStream(targetFile);
         this.bufferedStream=new BufferedOutputStream(fileOutputStream,bufferedSize>0?bufferedSize:DEFAULTBUFFEREDSIZE);
-        this.zipOutStream=new ZipOutputStream(fileOutputStream);
+        this.zipOutStream=new OpcZipOutputStream(fileOutputStream);
     }
 
+    public OPCPackage(InputStream stream, String encode, ZipStreamEntry.InputStreamBufferMode mode) throws IOException{
+        zipStreams=new ZipArchiveInputStream(stream,encode);
+
+        if (ObjectUtils.isEmpty(zipFile) && !ObjectUtils.isEmpty(zipStreams)) {
+            entry = new ZipStreamEntry(zipStreams,mode);
+        }
+    }
     private OPCPackage(OutputStream outputStream,int bufferedSize){
         this.bufferedStream=new BufferedOutputStream(outputStream,bufferedSize>0?bufferedSize:DEFAULTBUFFEREDSIZE);
         readWriteMode=true;
-        zipOutStream=new ZipOutputStream(bufferedStream);
-    }
-    private OPCPackage(InputStream stream,String encode) throws IOException{
-        zipStreams=new ZipArchiveInputStream(stream,encode);
-        if (ObjectUtils.isEmpty(zipFile) && !ObjectUtils.isEmpty(zipStreams)) {
-            entry = new ZipStreamEntry(zipStreams);
-        }
+        zipOutStream=new OpcZipOutputStream(bufferedStream);
     }
     private OPCPackage(InputStream stream) throws IOException {
-        this(stream,"UTF8");
+        this(stream,"UTF8", ZipStreamEntry.InputStreamBufferMode.HEAP);
     }
+
 
     public static OPCPackage open(File zipFile){
         return new OPCPackage(zipFile);
@@ -146,7 +153,7 @@ public class OPCPackage implements Closeable {
     }
     public static OPCPackage create(File fileName,int bufferedSize){
         try{
-            FileUtils.mkDirReclusive(fileName.getAbsolutePath());
+            FileUtils.mkDirReclusive(fileName.getAbsolutePath().replace("\\","/"));
             OPCPackage opcPackage=new OPCPackage(fileName,bufferedSize);
             return opcPackage;
 
@@ -205,13 +212,12 @@ public class OPCPackage implements Closeable {
         if(bufferedStream!=null){
             bufferedStream.flush();
             if(zipOutStream!=null){
-                zipOutStream.closeEntry();
-                zipOutStream.close();
+                //zipOutStream.closeEntry();
+                zipOutStream.finish();
             }
             if(fileOutputStream!=null){
                 fileOutputStream.close();
             }
-
         }
     }
 

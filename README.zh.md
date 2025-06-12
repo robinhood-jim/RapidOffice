@@ -12,13 +12,13 @@ RapidOffice
 ```xml
 <!-- process Excel -->
 <dependency>
-    <groupId>org.robin.rapidoffice</groupId>
+    <groupId>com.robin.rapidoffice</groupId>
     <artifactId>excel</artifactId>
     <version>0.1</version>
 </dependency>
 <!-- process Word -->
 <dependency>
-    <groupId>org.robin.rapidoffice</groupId>
+    <groupId>com.robin.rapidoffice</groupId>
     <artifactId>word</artifactId>
     <version>0.1</version>
 </dependency>

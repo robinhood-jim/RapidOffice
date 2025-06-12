@@ -37,7 +37,7 @@ public class TableElement implements IBodyElement {
         StringBuilder builder=new StringBuilder();
         builder.append("table begin \n");
         if(!CollectionUtils.isEmpty(headers)){
-            builder.append("headrs"+ StrUtil.join(",",headers)+" values:\n ");
+            builder.append("headrs\n"+ StrUtil.join(",",headers)+"\n values:\n ");
         }
         if(!CollectionUtils.isEmpty(values)){
             values.forEach(f->builder.append(StrUtil.join(",",f)+"\n"));

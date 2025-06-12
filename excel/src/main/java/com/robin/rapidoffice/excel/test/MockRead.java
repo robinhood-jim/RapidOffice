@@ -22,8 +22,8 @@ import java.util.stream.Stream;
 public class MockRead {
     public static void main(String[] args) throws IOException{
         new BufferedReader(new InputStreamReader(System.in)).readLine();
-        mockRead();
-        //mockWrite();
+        //mockRead();
+        mockWrite();
         new BufferedReader(new InputStreamReader(System.in)).readLine();
     }
     public static void mockRead(){

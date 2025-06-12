@@ -5,6 +5,7 @@ import com.robin.rapidoffice.reader.XMLReader;
 import com.robin.rapidoffice.word.Document;
 import lombok.Data;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,11 +39,15 @@ public class XRunElement implements IBodyElement{
     public String toString(){
         StringBuilder builder=new StringBuilder();
         if(content!=null){
-            builder.append("run"+id+"="+content+"\n");
+            if(!ObjectUtils.isEmpty(id)) {
+                builder.append("run" + id + "=" + content + "\n");
+            }else {
+                builder.append("run =" + content + "\n");
+            }
         }
         if(!CollectionUtils.isEmpty(pictureDatas)){
-            builder.append("pic=").append(pictureDatas.stream().map(PictureData::getRId).collect(Collectors.joining()));
-            builder.append("path=").append(pictureDatas.stream().map(PictureData::getPath).collect(Collectors.joining()));
+            builder.append("pic=").append(pictureDatas.stream().map(PictureData::getRId).collect(Collectors.joining())).append("\n");
+            builder.append("path=").append(pictureDatas.stream().map(PictureData::getPath).collect(Collectors.joining())).append("\n");
         }
         return builder.toString();
     }
