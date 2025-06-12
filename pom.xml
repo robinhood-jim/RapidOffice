@@ -54,7 +54,6 @@
         <module>core</module>
         <module>excel</module>
         <module>word</module>
-        <module>test</module>
     </modules>
     <!-- properties -->
     <properties>
