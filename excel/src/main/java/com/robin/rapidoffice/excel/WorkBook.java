@@ -304,7 +304,7 @@ public class WorkBook implements Closeable {
                     "<workbook " +
                     "xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" " +
                     "xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">" +
-                    "<workbookPr date1904=\"false\"/>" +
+                    "<workbookPr date1904=\""+date1904+"\"/>" +
                     "<bookViews>" +
                     "<workbookView activeTab=\"" + activeTab + "\"/>" +
                     "</bookViews>" +

@@ -9,13 +9,11 @@ import com.robin.rapidoffice.excel.elements.Cell;
 import com.robin.rapidoffice.excel.utils.CellUtils;
 import com.robin.rapidoffice.excel.utils.DateUtils;
 import com.robin.rapidoffice.exception.ExcelException;
-import com.robin.rapidoffice.meta.Fill;
-import com.robin.rapidoffice.meta.Font;
-import com.robin.rapidoffice.meta.Formula;
-import com.robin.rapidoffice.meta.ShardingString;
+import com.robin.rapidoffice.meta.*;
 import com.robin.rapidoffice.utils.OPCPackage;
 import com.robin.rapidoffice.writer.XMLWriter;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.io.IOException;
@@ -38,6 +36,7 @@ public class WorkSheet {
     protected final Set<Integer> hiddenRows = new HashSet<>();
 
     protected final Set<Integer> hiddenColumns = new HashSet<>();
+    protected final List<DataValidation> dataValidations=new ArrayList<>();
     protected final Map<Integer, Double> colWidths = new HashMap<>();
 
     protected final Map<Integer, Column> colStyles = new HashMap<>();
@@ -293,6 +292,12 @@ public class WorkSheet {
         XMLWriter w=workBook.sheetWriterMap.get(getIndex());
 
         w.append("</sheetData>");
+        //写入DataValidation
+        if(!CollectionUtils.isEmpty(dataValidations)){
+            for(DataValidation validation:dataValidations){
+                validation.writeOut(w);
+            }
+        }
         w.append("</worksheet>");
 
         w.flush();
@@ -310,6 +315,13 @@ public class WorkSheet {
             styles.set(pos-1,workBook.holder.mergeCellStyle(0, format, font,fill,defaultBorder, defaultAlignment));
         }
     }
+    public void addDataValidation(int colpos,int fromPos,String type,List<String> formula){
+        String colSuffix=CellUtils.colToString(colpos);
+        String sqRef=colSuffix+fromPos+":"+colSuffix+MAX_ROWS;
+        DataValidation validation=new DataValidation(type,sqRef,formula);
+        dataValidations.add(validation);
+    }
+
 
     public String getId() {
         return id;
