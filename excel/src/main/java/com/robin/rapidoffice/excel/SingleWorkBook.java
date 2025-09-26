@@ -30,6 +30,10 @@ public class SingleWorkBook extends WorkBook {
     public SingleWorkBook(InputStream inputStream) throws XMLStreamException, IOException {
         super(inputStream);
     }
+    public SingleWorkBook(InputStream inputStream,ExcelSheetProp prop) throws XMLStreamException, IOException {
+        super(inputStream);
+        this.prop=prop;
+    }
 
     public SingleWorkBook(File file) throws XMLStreamException, IOException {
         super(file);
