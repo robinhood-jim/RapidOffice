@@ -104,8 +104,6 @@ public class XMLReader implements Closeable {
                     break;
                 }
                 if(reader.isStartElement()) {
-                    //System.out.println("start "+reader.getLocalName());
-                    //System.out.println(reader.getAttributeCount());
                     consumer.accept(reader);
                 }
             }
